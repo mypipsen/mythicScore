@@ -31,23 +31,37 @@ interface ChartDataPoint {
   }[];
 }
 
+const getSavedCharacter = () => {
+  try {
+    const saved = localStorage.getItem('mythic_saved_character');
+    if (saved) return JSON.parse(saved);
+  } catch (e) {
+    console.error("Error reading from localStorage", e);
+  }
+  return null;
+};
+
 const App: React.FC = () => {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const savedChar = getSavedCharacter();
+
   // Form state
-  const [region, setRegion] = useState('eu');
-  const [realm, setRealm] = useState('tarren-mill');
-  const [name, setName] = useState('Bikstok');
+  const [region, setRegion] = useState(savedChar?.region?.toLowerCase() || 'eu');
+  const [realm, setRealm] = useState(savedChar?.realm?.toLowerCase().replace(/\s+/g, '-') || 'tarren-mill');
+  const [name, setName] = useState(savedChar?.name || 'Bikstok');
 
   // Currently loaded character state
-  const [characterId, setCharacterId] = useState<number | null>(242514059);
-  const [characterDisplay, setCharacterDisplay] = useState<{ name: string, realm: string, region: string } | null>({
-    name: 'Bikstok',
-    realm: 'Tarren Mill',
-    region: 'EU'
-  });
+  const [characterId, setCharacterId] = useState<number | null>(savedChar?.characterId || 242514059);
+  const [characterDisplay, setCharacterDisplay] = useState<{ name: string, realm: string, region: string } | null>(
+    savedChar ? { name: savedChar.name, realm: savedChar.realm, region: savedChar.region } : {
+      name: 'Bikstok',
+      realm: 'Tarren Mill',
+      region: 'EU'
+    }
+  );
 
   const dungeonIds = [15808, 14032, 6988, 15829, 8910, 16395, 4813, 16573];
 
@@ -84,6 +98,17 @@ const App: React.FC = () => {
         region: match.data.region.short_name
       });
       setCharacterId(match.data.id);
+
+      try {
+        localStorage.setItem('mythic_saved_character', JSON.stringify({
+          characterId: match.data.id,
+          name: match.data.name,
+          realm: match.data.realm.name,
+          region: match.data.region.short_name
+        }));
+      } catch (e) {
+        // Ignore quota errors
+      }
     } catch (err) {
       console.error(err);
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
