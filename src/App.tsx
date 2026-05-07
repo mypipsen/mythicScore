@@ -24,10 +24,12 @@ interface NewRaiderIoResponse {
 interface ChartDataPoint {
   date: string;
   totalScore: number;
+  scoreIncrease: number;
   allRuns: {
     dungeon: string;
     level: number;
     score: number;
+    runScoreIncrease: number;
   }[];
 }
 
@@ -195,8 +197,9 @@ const App: React.FC = () => {
       const dungeonName = run.summary.dungeon.short_name;
       const runScore = run.score;
 
+      let scoreDiff = 0;
       if (!bestScores[dungeonName] || runScore > bestScores[dungeonName]) {
-        const scoreDiff = runScore - (bestScores[dungeonName] || 0);
+        scoreDiff = runScore - (bestScores[dungeonName] || 0);
         bestScores[dungeonName] = runScore;
         currentTotalScore += scoreDiff;
       }
@@ -219,11 +222,13 @@ const App: React.FC = () => {
         groupedData[dateStr] = {
           date: dateStr,
           totalScore: currentTotalScore,
-          allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore }]
+          scoreIncrease: scoreDiff,
+          allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff }]
         };
       } else {
         groupedData[dateStr].totalScore = currentTotalScore;
-        groupedData[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore });
+        groupedData[dateStr].scoreIncrease += scoreDiff;
+        groupedData[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff });
       }
     });
 
@@ -241,14 +246,26 @@ const App: React.FC = () => {
       return (
         <div className="custom-tooltip">
           <p>{label}</p>
-          <p className="score">Total Score: {dataPoint.totalScore.toFixed(1)}</p>
+          <p className="score">
+            Total Score: {dataPoint.totalScore.toFixed(1)}
+            {dataPoint.scoreIncrease > 0 && (
+              <span style={{ color: '#10b981', marginLeft: '6px', fontSize: '0.85em' }}>
+                (+{dataPoint.scoreIncrease.toFixed(1)})
+              </span>
+            )}
+          </p>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
-            {dataPoint.allRuns.length} run{dataPoint.allRuns.length > 1 ? 's' : ''} today:
+            {dataPoint.allRuns.length} run{dataPoint.allRuns.length > 1 ? 's' : ''} {grouping === 'day' ? 'today' : 'this week'}:
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
             {dataPoint.allRuns.map((r, i) => (
               <p key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>
                 {r.dungeon} +{r.level} ({r.score.toFixed(1)})
+                {r.runScoreIncrease > 0 && (
+                  <span style={{ color: '#10b981', marginLeft: '4px' }}>
+                    (+{r.runScoreIncrease.toFixed(1)})
+                  </span>
+                )}
               </p>
             ))}
           </div>
