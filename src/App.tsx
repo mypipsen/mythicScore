@@ -46,6 +46,9 @@ const App: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [rawRuns, setRawRuns] = useState<NewRunResponse[]>([]);
+  const [grouping, setGrouping] = useState<'day' | 'week'>('day');
+
   const savedChar = getSavedCharacter();
 
   // Form state
@@ -72,6 +75,7 @@ const App: React.FC = () => {
     setLoading(true);
     setError(null);
     setData([]);
+    setRawRuns([]);
     setCharacterDisplay(null);
 
     try {
@@ -146,42 +150,7 @@ const App: React.FC = () => {
 
         // Parse and sort data chronologically
         const sortedRuns = allRuns.sort((a, b) => new Date(a.summary.completed_at).getTime() - new Date(b.summary.completed_at).getTime());
-
-        // Calculate cumulative score progression grouped by day
-        const bestScores: Record<string, number> = {};
-        let currentTotalScore = 0;
-        const groupedByDay: Record<string, ChartDataPoint> = {};
-
-        sortedRuns.forEach((run) => {
-          const dungeonName = run.summary.dungeon.short_name;
-          const runScore = run.score;
-
-          if (!bestScores[dungeonName] || runScore > bestScores[dungeonName]) {
-            const scoreDiff = runScore - (bestScores[dungeonName] || 0);
-            bestScores[dungeonName] = runScore;
-            currentTotalScore += scoreDiff;
-          }
-
-          const dateStr = new Date(run.summary.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
-          if (!groupedByDay[dateStr]) {
-            groupedByDay[dateStr] = {
-              date: dateStr,
-              totalScore: currentTotalScore,
-              allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore }]
-            };
-          } else {
-            groupedByDay[dateStr].totalScore = currentTotalScore;
-            groupedByDay[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore });
-          }
-        });
-
-        const chartData: ChartDataPoint[] = Object.values(groupedByDay).map(day => ({
-          ...day,
-          allRuns: day.allRuns.sort((a, b) => b.score - a.score)
-        }));
-
-        setData(chartData);
+        setRawRuns(sortedRuns);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching raider.io data:", err);
@@ -192,6 +161,79 @@ const App: React.FC = () => {
 
     fetchData();
   }, [characterId]);
+
+  useEffect(() => {
+    if (rawRuns.length === 0) {
+      setData([]);
+      return;
+    }
+
+    const bestScores: Record<string, number> = {};
+    let currentTotalScore = 0;
+    const groupedData: Record<string, ChartDataPoint> = {};
+
+    const getWeekStart = (dateStr: string) => {
+      const d = new Date(dateStr);
+      const day = d.getDay();
+      
+      const regionLower = characterDisplay?.region?.toLowerCase() || 'eu';
+      let resetDay = 3; // EU default (Wednesday)
+      if (regionLower === 'us') resetDay = 2; // Tuesday
+      else if (regionLower === 'kr' || regionLower === 'tw') resetDay = 4; // Thursday
+
+      const diff = d.getDate() - ((day - resetDay + 7) % 7);
+      return new Date(d.setDate(diff));
+    };
+
+    const getSeasonStart = (regionLower: string) => {
+      if (regionLower === 'us') return new Date(2026, 2, 24); // March 24
+      if (regionLower === 'kr' || regionLower === 'tw') return new Date(2026, 2, 26); // March 26
+      return new Date(2026, 2, 25); // March 25 (EU)
+    };
+
+    rawRuns.forEach((run) => {
+      const dungeonName = run.summary.dungeon.short_name;
+      const runScore = run.score;
+
+      if (!bestScores[dungeonName] || runScore > bestScores[dungeonName]) {
+        const scoreDiff = runScore - (bestScores[dungeonName] || 0);
+        bestScores[dungeonName] = runScore;
+        currentTotalScore += scoreDiff;
+      }
+
+      let dateStr = "";
+      if (grouping === 'day') {
+        dateStr = new Date(run.summary.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+      } else {
+        const weekStart = getWeekStart(run.summary.completed_at);
+        const regionLower = characterDisplay?.region?.toLowerCase() || 'eu';
+        const seasonStart = getSeasonStart(regionLower);
+        
+        const diffDays = Math.round((weekStart.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
+        const weekNum = Math.max(1, Math.floor(diffDays / 7) + 1);
+
+        dateStr = `Week ${weekNum} (${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})`;
+      }
+
+      if (!groupedData[dateStr]) {
+        groupedData[dateStr] = {
+          date: dateStr,
+          totalScore: currentTotalScore,
+          allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore }]
+        };
+      } else {
+        groupedData[dateStr].totalScore = currentTotalScore;
+        groupedData[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore });
+      }
+    });
+
+    const chartData: ChartDataPoint[] = Object.values(groupedData).map(group => ({
+      ...group,
+      allRuns: group.allRuns.sort((a, b) => b.score - a.score)
+    }));
+
+    setData(chartData);
+  }, [rawRuns, grouping, characterDisplay]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -252,6 +294,44 @@ const App: React.FC = () => {
       </form>
 
       <div className="chart-card">
+        {!loading && !error && data.length > 0 && (
+          <div className="chart-header" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
+            <div className="toggle-group" style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px' }}>
+              <button 
+                onClick={() => setGrouping('day')}
+                style={{ 
+                  padding: '6px 12px', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  background: grouping === 'day' ? '#8b5cf6' : 'transparent', 
+                  color: grouping === 'day' ? 'white' : '#94a3b8', 
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+              >
+                Day
+              </button>
+              <button 
+                onClick={() => setGrouping('week')}
+                style={{ 
+                  padding: '6px 12px', 
+                  border: 'none', 
+                  borderRadius: '4px', 
+                  background: grouping === 'week' ? '#8b5cf6' : 'transparent', 
+                  color: grouping === 'week' ? 'white' : '#94a3b8', 
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: 500,
+                  transition: 'all 0.2s'
+                }}
+              >
+                Week
+              </button>
+            </div>
+          </div>
+        )}
         {loading ? (
           <div className="loading-container">
             <Loader2 size={48} className="spinner" />
