@@ -32,6 +32,8 @@ export const ScoreChart: React.FC<ScoreChartProps> = ({ data, grouping }) => {
           stroke="#94a3b8"
           tick={{ fill: '#94a3b8' }}
           tickMargin={10}
+          interval={grouping === 'week' ? 0 : 'preserveStartEnd'}
+          tickFormatter={(tick) => grouping === 'week' && typeof tick === 'string' ? tick.split(' (')[0] : tick}
         />
         <YAxis
           stroke="#94a3b8"
