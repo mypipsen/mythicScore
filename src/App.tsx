@@ -43,6 +43,19 @@ const getSavedCharacter = () => {
   return null;
 };
 
+const getInitialUrl = (savedChar: any) => {
+  const pathParts = window.location.pathname.split('/').filter(Boolean);
+  if (pathParts.length === 3) {
+    const [region, realm, name] = pathParts;
+    return `https://raider.io/characters/${region}/${realm}/${name}`;
+  }
+
+  return savedChar?.url ||
+    (savedChar?.region && savedChar?.realm && savedChar?.name
+      ? `https://raider.io/characters/${savedChar.region.toLowerCase()}/${savedChar.realm.toLowerCase().replace(/\s+/g, '-')}/${savedChar.name}`
+      : 'https://raider.io/characters/eu/tarren-mill/Bikstok');
+};
+
 const App: React.FC = () => {
   const [data, setData] = useState<ChartDataPoint[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -52,11 +65,39 @@ const App: React.FC = () => {
   const [grouping, setGrouping] = useState<'day' | 'week'>('day');
 
   const savedChar = getSavedCharacter();
+  const initialUrl = getInitialUrl(savedChar);
 
   // Form state
-  const [region, setRegion] = useState(savedChar?.region?.toLowerCase() || 'eu');
-  const [realm, setRealm] = useState(savedChar?.realm?.toLowerCase().replace(/\s+/g, '-') || 'tarren-mill');
-  const [name, setName] = useState(savedChar?.name || 'Bikstok');
+  const [activeUrl, setActiveUrl] = useState<string>(initialUrl);
+  const [raiderIoUrl, setRaiderIoUrl] = useState<string>(initialUrl);
+
+  useEffect(() => {
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if (pathParts.length !== 3) {
+      const urlMatch = initialUrl.match(/raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/);
+      if (urlMatch) {
+        const [_, region, realm, name] = urlMatch;
+        window.history.replaceState({}, '', `/${region}/${realm}/${name}`);
+      }
+    }
+  }, [initialUrl]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathParts = window.location.pathname.split('/').filter(Boolean);
+      if (pathParts.length === 3) {
+        const [region, realm, name] = pathParts;
+        const urlFromPath = `https://raider.io/characters/${region}/${realm}/${name}`;
+        if (urlFromPath !== activeUrl) {
+          setRaiderIoUrl(urlFromPath);
+          setActiveUrl(urlFromPath);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [activeUrl]);
 
   // Currently loaded character state
   const [characterId, setCharacterId] = useState<number | null>(savedChar?.characterId || 242514059);
@@ -70,57 +111,82 @@ const App: React.FC = () => {
 
   const dungeonIds = [15808, 14032, 6988, 15829, 8910, 16395, 4813, 16573];
 
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !realm || !region) return;
+    if (!raiderIoUrl || raiderIoUrl === activeUrl) return;
 
-    setLoading(true);
-    setError(null);
-    setData([]);
-    setRawRuns([]);
-    setCharacterDisplay(null);
+    const urlMatch = raiderIoUrl.match(/raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/);
+    if (urlMatch) {
+      const [_, region, realm, name] = urlMatch;
+      window.history.pushState({}, '', `/${region}/${realm}/${name}`);
+    }
+    setActiveUrl(raiderIoUrl);
+  };
 
-    try {
-      // Step 1: Search for the character to get their characterId
-      const searchRes = await fetch(`/api/search?term=${encodeURIComponent(name)}`);
-      if (!searchRes.ok) throw new Error("Failed to search for character");
+  useEffect(() => {
+    const performSearch = async () => {
+      if (!activeUrl) return;
 
-      const searchData = await searchRes.json();
+      setLoading(true);
+      setError(null);
+      setData([]);
+      setRawRuns([]);
+      setCharacterDisplay(null);
 
-      const match = searchData.matches?.find((m: any) =>
-        m.type === 'character' &&
-        m.data.region.slug.toLowerCase() === region.toLowerCase() &&
-        (m.data.realm.slug.toLowerCase() === realm.toLowerCase().replace(/\s+/g, '-') ||
-          m.data.realm.name.toLowerCase() === realm.toLowerCase())
-      );
-
-      if (!match) {
-        throw new Error(`Character not found: ${name} on ${realm} (${region.toUpperCase()})`);
+      const urlMatch = activeUrl.match(/raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/);
+      if (!urlMatch) {
+        setError("Invalid raider.io URL format. Please use https://raider.io/characters/region/realm/name");
+        setLoading(false);
+        return;
       }
 
-      setCharacterDisplay({
-        name: match.data.name,
-        realm: match.data.realm.name,
-        region: match.data.region.short_name
-      });
-      setCharacterId(match.data.id);
+      const [_, region, realm, name] = urlMatch;
 
       try {
-        localStorage.setItem('mythic_saved_character', JSON.stringify({
-          characterId: match.data.id,
+        // Step 1: Search for the character to get their characterId
+        const searchRes = await fetch(`/api/search?term=${encodeURIComponent(name)}`);
+        if (!searchRes.ok) throw new Error("Failed to search for character");
+
+        const searchData = await searchRes.json();
+
+        const match = searchData.matches?.find((m: any) =>
+          m.type === 'character' &&
+          m.data.region.slug.toLowerCase() === region.toLowerCase() &&
+          (m.data.realm.slug.toLowerCase() === realm.toLowerCase().replace(/\s+/g, '-') ||
+            m.data.realm.name.toLowerCase() === realm.toLowerCase())
+        );
+
+        if (!match) {
+          throw new Error(`Character not found: ${name} on ${realm} (${region.toUpperCase()})`);
+        }
+
+        setCharacterDisplay({
           name: match.data.name,
           realm: match.data.realm.name,
           region: match.data.region.short_name
-        }));
-      } catch (e) {
-        // Ignore quota errors
+        });
+        setCharacterId(match.data.id);
+
+        try {
+          localStorage.setItem('mythic_saved_character', JSON.stringify({
+            characterId: match.data.id,
+            name: match.data.name,
+            realm: match.data.realm.name,
+            region: match.data.region.short_name,
+            url: activeUrl
+          }));
+        } catch (e) {
+          // Ignore quota errors
+        }
+      } catch (err) {
+        console.error(err);
+        setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        setLoading(false);
       }
-    } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      setLoading(false);
-    }
-  };
+    };
+
+    performSearch();
+  }, [activeUrl]);
 
   useEffect(() => {
     if (!characterId) return;
@@ -177,7 +243,7 @@ const App: React.FC = () => {
     const getWeekStart = (dateStr: string) => {
       const d = new Date(dateStr);
       const day = d.getDay();
-      
+
       const regionLower = characterDisplay?.region?.toLowerCase() || 'eu';
       let resetDay = 3; // EU default (Wednesday)
       if (regionLower === 'us') resetDay = 2; // Tuesday
@@ -211,7 +277,7 @@ const App: React.FC = () => {
         const weekStart = getWeekStart(run.summary.completed_at);
         const regionLower = characterDisplay?.region?.toLowerCase() || 'eu';
         const seasonStart = getSeasonStart(regionLower);
-        
+
         const diffDays = Math.round((weekStart.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
         const weekNum = Math.max(1, Math.floor(diffDays / 7) + 1);
 
@@ -285,25 +351,13 @@ const App: React.FC = () => {
       </div>
 
       <form className="search-form" onSubmit={handleSearch}>
-        <select value={region} onChange={e => setRegion(e.target.value)} className="search-input select-input">
-          <option value="us">US</option>
-          <option value="eu">EU</option>
-          <option value="kr">KR</option>
-          <option value="tw">TW</option>
-        </select>
         <input
-          type="text"
-          value={realm}
-          onChange={e => setRealm(e.target.value)}
-          placeholder="Realm (e.g. tarren-mill)"
+          type="url"
+          value={raiderIoUrl}
+          onChange={e => setRaiderIoUrl(e.target.value)}
+          placeholder="https://raider.io/characters/eu/tarren-mill/Bikstok"
           className="search-input"
-        />
-        <input
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder="Character Name"
-          className="search-input"
+          style={{ flex: 1 }}
         />
         <button type="submit" className="search-button">
           <Search size={18} /> Search
@@ -314,14 +368,14 @@ const App: React.FC = () => {
         {!loading && !error && data.length > 0 && (
           <div className="chart-header" style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '16px' }}>
             <div className="toggle-group" style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', padding: '4px', borderRadius: '8px' }}>
-              <button 
+              <button
                 onClick={() => setGrouping('day')}
-                style={{ 
-                  padding: '6px 12px', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  background: grouping === 'day' ? '#8b5cf6' : 'transparent', 
-                  color: grouping === 'day' ? 'white' : '#94a3b8', 
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: grouping === 'day' ? '#8b5cf6' : 'transparent',
+                  color: grouping === 'day' ? 'white' : '#94a3b8',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: 500,
@@ -330,14 +384,14 @@ const App: React.FC = () => {
               >
                 Day
               </button>
-              <button 
+              <button
                 onClick={() => setGrouping('week')}
-                style={{ 
-                  padding: '6px 12px', 
-                  border: 'none', 
-                  borderRadius: '4px', 
-                  background: grouping === 'week' ? '#8b5cf6' : 'transparent', 
-                  color: grouping === 'week' ? 'white' : '#94a3b8', 
+                style={{
+                  padding: '6px 12px',
+                  border: 'none',
+                  borderRadius: '4px',
+                  background: grouping === 'week' ? '#8b5cf6' : 'transparent',
+                  color: grouping === 'week' ? 'white' : '#94a3b8',
                   cursor: 'pointer',
                   fontSize: '14px',
                   fontWeight: 500,
