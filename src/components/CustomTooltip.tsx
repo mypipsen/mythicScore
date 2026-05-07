@@ -17,7 +17,7 @@ export const CustomTooltip = ({ active, payload, label, grouping }: any) => {
         <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', margin: '4px 0', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '4px' }}>
           {dataPoint.allRuns.length} run{dataPoint.allRuns.length > 1 ? 's' : ''} {grouping === 'day' ? 'today' : 'this week'}:
         </p>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '4px', maxHeight: '200px', overflowY: 'auto', paddingRight: '4px' }}>
           {dataPoint.allRuns.map((r, i) => (
             <p key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>
               {r.dungeon} +{r.level} ({r.score.toFixed(1)})

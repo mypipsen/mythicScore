@@ -76,6 +76,7 @@ body {
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
 }
 
 .custom-tooltip p {
@@ -176,4 +177,24 @@ body {
 
 .search-button:active {
   transform: scale(0.96);
+}
+
+/* Custom scrollbar for webkit browsers */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #7c3aed;
 }

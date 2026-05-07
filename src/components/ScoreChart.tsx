@@ -39,7 +39,7 @@ export const ScoreChart: React.FC<ScoreChartProps> = ({ data, grouping }) => {
           tickMargin={10}
           domain={['auto', 'auto']}
         />
-        <Tooltip content={<CustomTooltip grouping={grouping} />} />
+        <Tooltip content={<CustomTooltip grouping={grouping} />} wrapperStyle={{ pointerEvents: 'auto' }} />
         <Area
           type="monotone"
           dataKey="totalScore"
