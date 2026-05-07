@@ -5,6 +5,7 @@ export type RunSummary = {
   };
   mythic_level: number;
   completed_at: string;
+  time_remaining_ms: number;
 };
 
 export type NewRunResponse = {
@@ -25,6 +26,7 @@ export type ChartDataPoint = {
     level: number;
     score: number;
     runScoreIncrease: number;
+    isDepleted: boolean;
   }[];
 };
 

@@ -21,6 +21,11 @@ export const CustomTooltip = ({ active, payload, label, grouping }: any) => {
           {dataPoint.allRuns.map((r, i) => (
             <p key={i} style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0 }}>
               {r.dungeon} +{r.level} ({r.score.toFixed(1)})
+              {r.isDepleted && (
+                <span style={{ color: '#ef4444', marginLeft: '4px', fontSize: '0.85em', fontWeight: 600 }}>
+                  (Depleted)
+                </span>
+              )}
               {r.runScoreIncrease > 0 && (
                 <span style={{ color: '#10b981', marginLeft: '4px' }}>
                   (+{r.runScoreIncrease.toFixed(1)})

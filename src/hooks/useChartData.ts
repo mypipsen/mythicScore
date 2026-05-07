@@ -63,12 +63,12 @@ export const useChartData = (rawRuns: NewRunResponse[], grouping: 'day' | 'week'
           date: dateStr,
           totalScore: currentTotalScore,
           scoreIncrease: scoreDiff,
-          allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff }]
+          allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff, isDepleted: run.summary.time_remaining_ms < 0 }]
         };
       } else {
         groupedData[dateStr].totalScore = currentTotalScore;
         groupedData[dateStr].scoreIncrease += scoreDiff;
-        groupedData[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff });
+        groupedData[dateStr].allRuns.push({ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff, isDepleted: run.summary.time_remaining_ms < 0 });
       }
     });
 
