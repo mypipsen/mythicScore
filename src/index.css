@@ -198,3 +198,102 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #7c3aed;
 }
+
+.header-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.total-runs {
+  margin-left: 0.5rem;
+  padding-left: 0.75rem;
+  border-left: 1px solid rgba(255,255,255,0.2);
+  color: #94a3b8;
+}
+
+.total-runs strong {
+  color: #fff;
+  font-weight: 600;
+}
+
+.chart-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.toggle-group {
+  display: flex;
+  background: rgba(255,255,255,0.05);
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.toggle-btn {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.toggle-btn.active {
+  background: #8b5cf6;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  #root {
+    padding: 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  .header-info {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .total-runs {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .chart-card {
+    padding: 1rem;
+    border-radius: 12px;
+  }
+
+  .search-form {
+    padding: 1rem;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .chart-controls {
+    justify-content: center;
+  }
+
+  .toggle-group {
+    width: 100%;
+  }
+
+  .toggle-btn {
+    flex: 1;
+  }
+}
