@@ -18,7 +18,10 @@ const App: React.FC = () => {
 
   return (
     <div className="app-container">
-      <Header characterDisplay={characterDisplay} />
+      <Header 
+        characterDisplay={characterDisplay} 
+        totalRuns={!loading && !error && rawRuns.length > 0 ? rawRuns.length : undefined} 
+      />
 
       <SearchForm 
         raiderIoUrl={raiderIoUrl} 
