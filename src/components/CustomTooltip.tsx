@@ -1,11 +1,11 @@
 import { ChartDataPoint } from '../types';
 
-export const CustomTooltip = ({ active, payload, label, grouping }: any) => {
+export const CustomTooltip = ({ active, payload, grouping }: any) => {
   if (active && payload && payload.length) {
     const dataPoint = payload[0].payload as ChartDataPoint;
     return (
       <div className="custom-tooltip">
-        <p>{label}</p>
+        <p>{dataPoint.date}</p>
         <p className="score">
           Total Score: {dataPoint.totalScore.toFixed(1)}
           {dataPoint.scoreIncrease > 0 && (

@@ -9,6 +9,27 @@ type ScoreChartProps = {
 };
 
 export const ScoreChart: React.FC<ScoreChartProps> = ({ data, grouping }) => {
+  const getTicks = () => {
+    if (!data || data.length === 0) return [];
+    if (grouping === 'week') {
+      return data.map(d => d.timestamp);
+    }
+
+    const min = data[0].timestamp;
+    const max = data[data.length - 1].timestamp;
+    const dayMs = 24 * 60 * 60 * 1000;
+    const days = Math.round((max - min) / dayMs);
+
+    const ticks = [];
+    const step = Math.max(1, Math.ceil(days / 7)); // aim for ~7 ticks to avoid crowding
+    for (let i = 0; i <= days; i += step) {
+      const d = new Date(min);
+      d.setDate(d.getDate() + i);
+      ticks.push(d.getTime());
+    }
+    return ticks;
+  };
+
   return (
     <ResponsiveContainer width="100%" height={400}>
       <AreaChart
@@ -28,12 +49,22 @@ export const ScoreChart: React.FC<ScoreChartProps> = ({ data, grouping }) => {
         </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" vertical={false} />
         <XAxis
-          dataKey="date"
+          dataKey="timestamp"
+          type="number"
+          scale="time"
+          domain={['dataMin', 'dataMax']}
           stroke="#94a3b8"
           tick={{ fill: '#94a3b8' }}
           tickMargin={10}
-          interval={grouping === 'week' ? 0 : 'preserveStartEnd'}
-          tickFormatter={(tick) => grouping === 'week' && typeof tick === 'string' ? tick.split(' (')[0] : tick}
+          ticks={getTicks()}
+          interval={0}
+          tickFormatter={(tick) => {
+            const match = data.find(d => d.timestamp === tick);
+            if (match) {
+              return grouping === 'week' ? match.date.split(' (')[0] : match.date;
+            }
+            return new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+          }}
         />
         <YAxis
           stroke="#94a3b8"

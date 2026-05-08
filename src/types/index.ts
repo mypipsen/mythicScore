@@ -19,6 +19,7 @@ export type NewRaiderIoResponse = {
 
 export type ChartDataPoint = {
   date: string;
+  timestamp: number;
   totalScore: number;
   scoreIncrease: number;
   allRuns: {

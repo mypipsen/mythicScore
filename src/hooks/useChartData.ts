@@ -45,8 +45,11 @@ export const useChartData = (rawRuns: NewRunResponse[], grouping: 'day' | 'week'
       }
 
       let dateStr = "";
+      let timestamp = 0;
       if (grouping === 'day') {
-        dateStr = new Date(run.summary.completed_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        const d = new Date(run.summary.completed_at);
+        timestamp = d.setHours(0, 0, 0, 0); // start of day
+        dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
       } else {
         const weekStart = getWeekStart(run.summary.completed_at);
         const regionLower = characterDisplay?.region?.toLowerCase() || 'eu';
@@ -54,6 +57,7 @@ export const useChartData = (rawRuns: NewRunResponse[], grouping: 'day' | 'week'
 
         const diffDays = Math.round((weekStart.getTime() - seasonStart.getTime()) / (1000 * 60 * 60 * 24));
         const weekNum = Math.max(1, Math.floor(diffDays / 7) + 1);
+        timestamp = weekStart.getTime();
 
         dateStr = `Week ${weekNum} (${weekStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })})`;
       }
@@ -61,6 +65,7 @@ export const useChartData = (rawRuns: NewRunResponse[], grouping: 'day' | 'week'
       if (!groupedData[dateStr]) {
         groupedData[dateStr] = {
           date: dateStr,
+          timestamp,
           totalScore: currentTotalScore,
           scoreIncrease: scoreDiff,
           allRuns: [{ dungeon: dungeonName, level: run.summary.mythic_level, score: runScore, runScoreIncrease: scoreDiff, isDepleted: run.summary.time_remaining_ms < 0 }]
@@ -75,7 +80,7 @@ export const useChartData = (rawRuns: NewRunResponse[], grouping: 'day' | 'week'
     const chartData: ChartDataPoint[] = Object.values(groupedData).map(group => ({
       ...group,
       allRuns: group.allRuns.sort((a, b) => b.score - a.score)
-    }));
+    })).sort((a, b) => a.timestamp - b.timestamp);
 
     setData(chartData);
   }, [rawRuns, grouping, characterDisplay]);
