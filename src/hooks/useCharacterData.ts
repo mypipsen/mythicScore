@@ -38,7 +38,16 @@ export const useCharacterData = (activeUrl: string) => {
         return;
       }
 
-      const [_, region, realm, name] = urlMatch;
+      const [_, rawRegion, rawRealm, rawName] = urlMatch;
+
+      const decodeSafe = (str: string) => {
+        try { return decodeURIComponent(str); }
+        catch { return str; }
+      };
+
+      const region = decodeSafe(rawRegion);
+      const realm = decodeSafe(rawRealm);
+      const name = decodeSafe(rawName);
 
       try {
         const searchRes = await fetch(`/api/search?term=${encodeURIComponent(name)}`);
