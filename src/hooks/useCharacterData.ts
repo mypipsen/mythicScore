@@ -57,6 +57,7 @@ export const useCharacterData = (activeUrl: string) => {
 
         const match = searchData.matches?.find((m: any) =>
           m.type === 'character' &&
+          m.data.name.toLowerCase() === name.toLowerCase() &&
           m.data.region.slug.toLowerCase() === region.toLowerCase() &&
           (m.data.realm.slug.toLowerCase() === realm.toLowerCase().replace(/\s+/g, '-') ||
             m.data.realm.name.toLowerCase() === realm.toLowerCase())
