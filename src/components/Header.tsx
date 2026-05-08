@@ -3,7 +3,7 @@ import { CharacterDisplay } from '../types';
 
 export const Header: React.FC<{ characterDisplay: CharacterDisplay | null, totalRuns?: number }> = ({ characterDisplay, totalRuns }) => (
   <div className="header">
-    <h1>Mythic Score Graph</h1>
+    <h1><a href="/" style={{ color: 'inherit', textDecoration: 'none' }}>Mythic Score</a></h1>
     {characterDisplay && (
       <p>
         {characterDisplay.name} - {characterDisplay.realm} ({characterDisplay.region})

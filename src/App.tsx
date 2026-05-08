@@ -35,7 +35,13 @@ const App: React.FC = () => {
           <ChartControls grouping={grouping} setGrouping={setGrouping} />
         )}
         
-        {loading ? (
+        {!activeUrl ? (
+          <div className="empty-state-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', color: '#94a3b8' }}>
+            <AlertCircle size={48} style={{ marginBottom: '16px', opacity: 0.5 }} />
+            <p style={{ fontSize: '18px', fontWeight: 500 }}>No Character Selected</p>
+            <p style={{ marginTop: '8px', opacity: 0.7 }}>Paste a Raider.io URL above to view their mythic score progression.</p>
+          </div>
+        ) : loading ? (
           <div className="loading-container">
             <Loader2 size={48} className="spinner" />
             <p>Fetching Character Data...</p>

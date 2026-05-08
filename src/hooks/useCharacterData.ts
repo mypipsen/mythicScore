@@ -1,24 +1,15 @@
 import { useState, useEffect } from 'react';
 import { NewRunResponse, CharacterDisplay, NewRaiderIoResponse } from '../types';
-import { getSavedCharacter } from '../utils/storage';
 
 const dungeonIds = [15808, 14032, 6988, 15829, 8910, 16395, 4813, 16573];
 
 export const useCharacterData = (activeUrl: string) => {
-  const savedChar = getSavedCharacter();
-
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [rawRuns, setRawRuns] = useState<NewRunResponse[]>([]);
   
-  const [characterId, setCharacterId] = useState<number | null>(savedChar?.characterId || 242514059);
-  const [characterDisplay, setCharacterDisplay] = useState<CharacterDisplay | null>(
-    savedChar ? { name: savedChar.name, realm: savedChar.realm, region: savedChar.region } : {
-      name: 'Bikstok',
-      realm: 'Tarren Mill',
-      region: 'EU'
-    }
-  );
+  const [characterId, setCharacterId] = useState<number | null>(null);
+  const [characterDisplay, setCharacterDisplay] = useState<CharacterDisplay | null>(null);
 
   useEffect(() => {
     const performSearch = async () => {
@@ -61,18 +52,6 @@ export const useCharacterData = (activeUrl: string) => {
           region: match.data.region.short_name
         });
         setCharacterId(match.data.id);
-
-        try {
-          localStorage.setItem('mythic_saved_character', JSON.stringify({
-            characterId: match.data.id,
-            name: match.data.name,
-            realm: match.data.realm.name,
-            region: match.data.region.short_name,
-            url: activeUrl
-          }));
-        } catch (e) {
-          // Ignore quota errors
-        }
       } catch (err) {
         console.error(err);
         setError(err instanceof Error ? err.message : 'An unknown error occurred');
