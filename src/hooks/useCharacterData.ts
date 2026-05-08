@@ -10,6 +10,16 @@ export const useCharacterData = (activeUrl: string) => {
   
   const [characterId, setCharacterId] = useState<number | null>(null);
   const [characterDisplay, setCharacterDisplay] = useState<CharacterDisplay | null>(null);
+  const [retrySearchCount, setRetrySearchCount] = useState<number>(0);
+  const [retryFetchCount, setRetryFetchCount] = useState<number>(0);
+
+  const retry = () => {
+    if (characterId) {
+      setRetryFetchCount(prev => prev + 1);
+    } else {
+      setRetrySearchCount(prev => prev + 1);
+    }
+  };
 
   useEffect(() => {
     const performSearch = async () => {
@@ -19,6 +29,7 @@ export const useCharacterData = (activeUrl: string) => {
       setError(null);
       setRawRuns([]);
       setCharacterDisplay(null);
+      setCharacterId(null);
 
       const urlMatch = activeUrl.match(/raider\.io\/characters\/([^/]+)\/([^/]+)\/([^/?#]+)/);
       if (!urlMatch) {
@@ -60,7 +71,7 @@ export const useCharacterData = (activeUrl: string) => {
     };
 
     performSearch();
-  }, [activeUrl]);
+  }, [activeUrl, retrySearchCount]);
 
   useEffect(() => {
     if (!characterId) return;
@@ -101,7 +112,7 @@ export const useCharacterData = (activeUrl: string) => {
     };
 
     fetchData();
-  }, [characterId]);
+  }, [characterId, retryFetchCount]);
 
-  return { loading, error, rawRuns, characterDisplay };
+  return { loading, error, rawRuns, characterDisplay, retry };
 };

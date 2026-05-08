@@ -13,7 +13,7 @@ const App: React.FC = () => {
   const [grouping, setGrouping] = useState<'day' | 'week'>('day');
 
   const { activeUrl, raiderIoUrl, setRaiderIoUrl, updateUrl } = useUrlState();
-  const { loading, error, rawRuns, characterDisplay } = useCharacterData(activeUrl);
+  const { loading, error, rawRuns, characterDisplay, retry } = useCharacterData(activeUrl);
   const data = useChartData(rawRuns, grouping, characterDisplay);
 
   return (
@@ -47,9 +47,28 @@ const App: React.FC = () => {
             <p>Fetching Character Data...</p>
           </div>
         ) : error ? (
-          <div className="error-container">
-            <AlertCircle size={48} color="#ef4444" />
-            <p>Error: {error}</p>
+          <div className="error-container" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444' }}>
+              <AlertCircle size={48} />
+              <p style={{ margin: 0 }}>Error: {error}</p>
+            </div>
+            <button 
+              onClick={retry}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#334155',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 500,
+                transition: 'background-color 0.2s'
+              }}
+              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#475569'}
+              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#334155'}
+            >
+              Retry
+            </button>
           </div>
         ) : data.length === 0 ? (
           <div className="error-container">
