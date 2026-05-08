@@ -21,6 +21,7 @@ const App: React.FC = () => {
       <Header 
         characterDisplay={characterDisplay} 
         totalRuns={!loading && !error && rawRuns.length > 0 ? rawRuns.length : undefined} 
+        currentScore={!loading && !error && data.length > 0 ? data[data.length - 1].totalScore : undefined}
       />
 
       <SearchForm 

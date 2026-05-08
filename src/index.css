@@ -207,14 +207,14 @@ body {
   gap: 0.5rem;
 }
 
-.total-runs {
+.total-runs, .current-score {
   margin-left: 0.5rem;
   padding-left: 0.75rem;
   border-left: 1px solid rgba(255,255,255,0.2);
   color: #94a3b8;
 }
 
-.total-runs strong {
+.total-runs strong, .current-score strong {
   color: #fff;
   font-weight: 600;
 }
@@ -263,7 +263,7 @@ body {
     gap: 0.25rem;
   }
 
-  .total-runs {
+  .total-runs, .current-score {
     margin-left: 0;
     padding-left: 0;
     border-left: none;
